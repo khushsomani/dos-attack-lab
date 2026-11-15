@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DoS Attack Lab — Interactive Network Simulation</title>
+<style>
+:root{--bg:#080d19;--panel:#111a2c;--panel2:#17233a;--line:#293a58;--ink:#edf4ff;--muted:#93a6c5;--cyan:#66d9f2;--green:#62e6a5;--red:#ff647c;--gold:#ffc66d}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:radial-gradient(ellipse at 50% -20%,#21365a 0,#0b1222 48%,#070b14 100%);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink)}
+.app{max-width:1200px;margin:auto}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:18px}
+.kicker{font-size:11px;letter-spacing:2px;font-weight:850;color:var(--cyan);text-transform:uppercase}
+h1{font-size:clamp(28px,4vw,43px);letter-spacing:-1.3px;margin:7px 0 5px}
+.subtitle{color:var(--muted);font-size:14px;margin:0;line-height:1.5}
+.pill{border:1px solid #355174;background:#12243d;color:#bfeaff;border-radius:999px;padding:8px 12px;font-size:11px;font-weight:750;white-space:nowrap}
+.layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(290px,.8fr);gap:16px}
+.panel{background:linear-gradient(150deg,rgba(21,32,54,.97),rgba(13,21,37,.97));border:1px solid var(--line);border-radius:18px;padding:17px;box-shadow:0 18px 45px #0004}
+.panel-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-weight:800;font-size:14px}
+.live{display:flex;align-items:center;gap:6px;color:var(--green);font-size:10px;letter-spacing:1px}
+.live:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
+#network{width:100%;height:410px;display:block;border:1px solid #263956;border-radius:13px;background:radial-gradient(ellipse at 50% 50%,#142542,#0a1324 74%);touch-action:pan-y}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:11px}
+.legend span{display:flex;align-items:center;gap:6px}
+.key{width:8px;height:8px;border-radius:50%;display:inline-block}
+.side{display:flex;flex-direction:column;gap:13px}
+.control{background:#0d1729;border:1px solid #263653;border-radius:13px;padding:13px}
+.control-head{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:12px;font-weight:700;margin-bottom:9px}
+.val{color:var(--cyan);font-variant-numeric:tabular-nums;font-weight:850}
+input[type=range]{width:100%;accent-color:var(--cyan);cursor:pointer}
+.ends{display:flex;justify-content:space-between;color:#7488a8;font-size:10px;margin-top:3px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+button{border:0;border-radius:10px;padding:11px 13px;font-weight:850;font-size:12px;cursor:pointer}
+.surge{background:linear-gradient(135deg,#ff647c,#ff8d70);color:#2a0911;flex:1}
+.pause,.reset{background:#233653;color:#e8f1ff;border:1px solid #385071}
+.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.metric{background:#0d1729;border:1px solid #263653;border-radius:12px;padding:11px}
+.metric small{display:block;color:var(--muted);font-size:10px;margin-bottom:5px}
+.metric strong{font-size:22px;font-variant-numeric:tabular-nums}
+.metric em{font-style:normal;color:var(--muted);font-size:10px}
+.loadrow{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin:2px 0 7px}
+.track{height:11px;background:#253653;border-radius:20px;overflow:hidden}
+.bar{height:100%;width:0;border-radius:20px;background:linear-gradient(90deg,var(--green),var(--gold),var(--red));transition:width .2s}
+.status{padding:11px 12px;border-radius:11px;background:#102c26;border:1px solid #205544;color:var(--green);font-size:12px;font-weight:800;line-height:1.4}
+.status.warn{background:#302719;border-color:#69502b;color:var(--gold)}
+.status.bad{background:#351c2a;border-color:#6b3043;color:#ff9cac}
+.explain{font-size:11px;color:var(--muted);line-height:1.5;margin:0}
+.keyline{height:1px;background:#263653;margin:2px 0}
+.footer{text-align:center;color:#7185a5;font-size:10px;margin-top:14px;line-height:1.5}
+@media(max-width:850px){body{padding:13px}.layout{grid-template-columns:1fr}.top{display:block}.pill{display:inline-block;margin-top:12px}#network{height:340px}}
+</style>
+</head>
+<body>
+<div class="app">
+ <div class="top">
+  <div><div class="kicker">Cybersecurity • Interactive classroom demo</div><h1>DoS Attack Lab</h1><p class="subtitle">Turn up the attack. Watch the server struggle. See genuine users get turned away.</p></div>
+  <div class="pill">SIMULATED NETWORK · SAFE TO EXPLORE</div>
+ </div>
+ <div class="layout">
+  <section class="panel">
+   <div class="panel-title"><span>�� Live network traffic</span><span class="live" id="liveLabel">LIVE SIMULATION</span></div>
+   <canvas id="network" aria-label="Animated simulation of malicious and legitimate requests reaching a server"></canvas>
+   <div class="legend">
+    <span><i class="key" style="background:#ff647c"></i>Malicious requests</span>
+    <span><i class="key" style="background:#62e6a5"></i>Legitimate users</span>
+    <span><i class="key" style="background:#66d9f2"></i>Accepted / processed</span>
+    <span><i class="key" style="background:#ffc66d"></i>Rejected / deflected</span>
+   </div>
+  </section>
+  <aside class="side">
+   <section class="panel">
+    <div class="panel-title">🎛️ Attack controls</div>
+    <div class="control">
+     <div class="control-head"><label for="attack">Malicious traffic</label><span class="val" id="attackText">35 req/s</span></div>
+     <input id="attack" type="range" min="0" max="180" value="35" step="5"><div class="ends"><span>None</span><span>Heavy attack</span></div>
+    </div>
+    <div class="control" style="margin-top:10px">
+     <div class="control-head"><label for="legit">Legitimate users</label><span class="val" id="legitText">25 req/s</span></div>
+     <input id="legit" type="range" min="0" max="90" value="25" step="5"><div class="ends"><span>Few users</span><span>Many users</span></div>
+    </div>
+    <div class="control" style="margin-top:10px">
+     <div class="control-head"><label for="capacity">Server capacity</label><span class="val" id="capacityText">80 req/s</span></div>
+     <input id="capacity" type="range" min="30" max="180" value="80" step="5"><div class="ends"><span>Low</span><span>High</span></div>
+    </div>
+    <div class="actions" style="margin-top:12px">
+     <button class="surge" id="surge">⚡ MAX ATTACK</button>
+     <button class="pause" id="pause">Ⅱ Pause</button>
+     <button class="reset" id="reset">↺ Reset</button>
+    </div>
+   </section>
+   <section class="panel">
+    <div class="panel-title">📡 Server monitor</div>
+    <div class="metrics">
+     <div class="metric"><small>Incoming traffic</small><strong id="incoming">60</strong><em> req/s</em></div>
+     <div class="metric"><small>Server load</small><strong id="load">75%</strong><em> capacity</em></div>
+     <div class="metric"><small>Users served</small><strong id="served">25</strong><em> req/s</em></div>
+     <div class="metric"><small>Users rejected</small><strong id="rejected">0</strong><em> req/s</em></div>
+    </div>
+    <div style="margin-top:14px">
+     <div class="loadrow"><span>Capacity being used</span><b id="loadLabel">75%</b></div>
+     <div class="track"><div class="bar" id="loadBar"></div></div>
+    </div>
+    <div class="status" id="status" style="margin-top:13px">✓ Server is handling all requests.</div>
+   </section>
+   <section class="panel">
+    <div class="panel-title">💡 What to notice</div>
+    <p class="explain" id="explain">The server has enough capacity for the incoming traffic. All legitimate users are getting through.</p>
+    <div class="keyline" style="margin:11px 0"></div>
+    <p class="explain"><b style="color:#eaf2ff">Try this:</b> Drag malicious traffic to maximum. Watch red packets crowd the server and yellow rejected packets turn back. Then lower the attack and see access recover.</p>
+   </section>
+  </aside>
+ </div>
+ <div class="footer">Illustrative model only. It does not send traffic over the internet. Real DoS attacks involve more complex infrastructure and mitigation.</div>
+</div>
+<script>
+(()=>{
+const canvas=document.getElementById('network'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+const attack=$('attack'),legit=$('legit'),capacity=$('capacity');
+let W=900,H=410,dpr=1,packets=[],last=0,spawnA=0,spawnL=0,paused=false,flash=0,accepted=0,rejected=0,served=0;
+const colors={red:'#ff647c',green:'#62e6a5',cyan:'#66d9f2',gold:'#ffc66d',muted:'#91a5c4'};
+function resize(){
+ const r=canvas.getBoundingClientRect();dpr=Math.min(devicePixelRatio||1,2);W=r.width;H=r.height;
+ canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize',resize);resize();
+function metrics(){
+ const a=+attack.value,l=+legit.value,c=+capacity.value,total=a+l;
+ const used=Math.min(total,c),servedNow=Math.min(l,Math.max(0,c-a)),rejectedNow=l-servedNow;
+ $('attackText').textContent=a+' req/s';$('legitText').textContent=l+' req/s';$('capacityText').textContent=c+' req/s';
+ $('incoming').textContent=total;$('load').textContent=Math.round(total/c*100)+'%';
+ $('served').textContent=Math.round(servedNow);$('rejected').textContent=Math.round(rejectedNow);
+ $('loadLabel').textContent=Math.round(total/c*100)+'%';$('loadBar').style.width=Math.min(100,total/c*100)+'%';
+ let s=$('status');
+ if(total<=c){s.className='status';s.textContent='✓ Server is handling all requests.';$('explain').textContent='The server has enough capacity for the incoming traffic. All legitimate users are getting through.';}
+ else if(a<c && rejectedNow===0){s.className='status warn';s.textContent='⚠ Server is at capacity. No spare room remains.';$('explain').textContent='The server is fully occupied by incoming requests. Genuine users may experience delays if traffic rises further.';}
+ else{s.className='status bad';s.textContent='✕ SERVER OVERLOADED — legitimate requests are being rejected.';$('explain').textContent='Malicious traffic is consuming server capacity. In this simplified model, around '+Math.round(rejectedNow)+' legitimate requests per second cannot be served.';}
+ return {a,l,c,total,used,servedNow,rejectedNow};
+}
+[attack,legit,capacity].forEach(e=>e.addEventListener('input',metrics));
+function roundRect(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.stroke()}}
+function label(t,x,y,color=colors.muted,size=11,align='left'){ctx.fillStyle=color;ctx.font=`700 ${size}px system-ui`;ctx.textAlign=align;ctx.fillText(t,x,y)}
+function drawServer(x,y,w,h,over){
+ ctx.save();ctx.shadowColor=over?'#ff647c66':'#66d9f244';ctx.shadowBlur=over?25:16;
+ roundRect(x,y,w,h,13,'#172c4a',over?'#ff647c':'#3d6a91');ctx.restore();
+ ctx.fillStyle=over?'#ff7186':'#66d9f2';ctx.font='26px system-ui';ctx.textAlign='center';ctx.fillText('▤',x+w/2,y+34);
+ label('WEB SERVER',x+w/2,y+55,'#eff6ff',11,'center');
+ label(over?'OVERLOADED':'ONLINE',x+w/2,y+73,over?colors.red:colors.green,9,'center');
+ // rack slots
+ for(let i=0;i<3;i++){roundRect(x+14,y+85+i*17,w-28,11,3,'#0b1729','#314c6e');ctx.fillStyle=i<Math.min(3,Math.round(+attack.value/(+capacity.value)*3))&&over?colors.red:colors.cyan;ctx.fillRect(x+22,y+89+i*17,5,3);}
+}
+function packet(p){
+ ctx.save();ctx.shadowBlur=12;ctx.shadowColor=p.color;ctx.fillStyle=p.color;
+ ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+ ctx.shadowBlur=0;ctx.globalAlpha=.45;ctx.beginPath();ctx.arc(p.x-p.vx*2.3,p.y-p.vy*2.3,p.r*.7,0,Math.PI*2);ctx.fill();ctx.restore();
+ if(p.state==='bounce'){ctx.save();ctx.fillStyle=colors.gold;ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.fillText('×',p.x,p.y-10);ctx.restore();}
+}
+function spawn(type){
+ const x=type==='a'?W*.13:W*.13,y=type==='a'?H*.34+(Math.random()-.5)*70:H*.68+(Math.random()-.5)*50;
+ const targetX=W*.62,targetY=H*.51+(Math.random()-.5)*100;
+ packets.push({x,y,sx:x,sy:y,tx:targetX,ty:targetY,vx:0,vy:0,type,color:type==='a'?colors.red:colors.green,r:type==='a'?3.3:3.8,state:'in',age:0,accepted:false});
+}
+function draw(t){
+ const dt=Math.min((t-last)/1000||0,.04);last=t;
+ const m=metrics();
+ ctx.clearRect(0,0,W,H);
+ // subtle grid
+ ctx.save();ctx.strokeStyle='#20345155';ctx.lineWidth=1;
+ for(let x=0;x<W;x+=32){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+ for(let y=0;y<H;y+=32){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}ctx.restore();
+ // zones and headings
+ label('REQUEST SOURCES',W*.12,28,'#a9bad3',10,'center');
+ label('TRAFFIC GATEWAY',W*.43,28,'#a9bad3',10,'center');
+ label('SERVER',W*.72,28,'#a9bad3',10,'center');
+ // source cards
+ roundRect(W*.035,H*.20,W*.18,H*.28,11,'#251b31','#754052');
+ label('⚠  ATTACKERS',W*.125,H*.28,'#ff8b9b',11,'center');
+ label('Malicious',W*.125,H*.36,'#d6a7b1',10,'center');
+ label(m.a+' req/s',W*.125,H*.42,colors.red,12,'center');
+ roundRect(W*.035,H*.58,W*.18,H*.25,11,'#142b2a','#2e765e');
+ label('☺  REAL USERS',W*.125,H*.66,'#80efb9',11,'center');
+ label('Legitimate',W*.125,H*.74,'#a4cdbb',10,'center');
+ label(m.l+' req/s',W*.125,H*.79,colors.green,12,'center');
+ // flow lines
+ ctx.save();ctx.setLineDash([5,7]);ctx.lineWidth=2;ctx.strokeStyle='#ff647c66';ctx.beginPath();ctx.moveTo(W*.22,H*.34);ctx.lineTo(W*.60,H*.43);ctx.stroke();ctx.strokeStyle='#62e6a566';ctx.beginPath();ctx.moveTo(W*.22,H*.70);ctx.lineTo(W*.60,H*.58);ctx.stroke();ctx.restore();
+ // gateway
+ roundRect(W*.40,H*.39,W*.12,H*.24,10,'#14253e','#456384');
+ label('FILTER',W*.46,H*.47,'#dceaff',10,'center');label('⇄',W*.46,H*.56,colors.cyan,22,'center');
+ drawServer(W*.66,H*.34,W*.18,H*.36,m.total>m.c);
+ // processed and denied labels
+ label('PROCESSED',W*.91,H*.31,colors.cyan,9,'center');
+ label('REJECTED',W*.91,H*.68,colors.gold,9,'center');
+ ctx.save();ctx.setLineDash([4,6]);ctx.strokeStyle='#66d9f266';ctx.beginPath();ctx.moveTo(W*.84,H*.44);ctx.lineTo(W*.96,H*.44);ctx.stroke();ctx.strokeStyle='#ffc66d66';ctx.beginPath();ctx.moveTo(W*.84,H*.60);ctx.lineTo(W*.96,H*.60);ctx.stroke();ctx.restore();
+ // packet spawning at controllable rates
+ if(!paused){
+  spawnA+=m.a*dt;spawnL+=m.l*dt;
+  while(spawnA>=1){spawn('a');spawnA-=1}
+  while(spawnL>=1){spawn('l');spawnL-=1}
+ }
+ const serverX=W*.66,serverY=H*.52;
+ for(let i=packets.length-1;i>=0;i--){
+  const p=packets[i];p.age+=dt;
+  if(!paused){
+   if(p.state==='in'){
+    const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy)||1;
+    const speed=190;p.vx=dx/d*speed;p.vy=dy/d*speed;p.x+=p.vx*dt;p.y+=p.vy*dt;
+    if(d<speed*dt+8){
+     const current=m;
+     // Simulated capacity shares: attack traffic consumes capacity first.
+     const attackShare=Math.min(current.a,current.c);
+     const remaining=Math.max(0,current.c-attackShare);
+     const legitAllowed=Math.min(current.l,remaining);
+     const allow=p.type==='a'?true:(Math.random()<((current.l?legitAllowed/current.l:1)));
+     // Attack packets are shown entering; excess load causes legitimate requests to be deflected.
+     if(allow){p.state='out';p.color=colors.cyan;p.x=serverX+W*.18;p.y=serverY+(Math.random()-.5)*38;p.vx=210;p.vy=(Math.random()-.5)*55;}
+     else{p.state='bounce';p.color=colors.gold;p.vx=-240;p.vy=(Math.random()-.5)*75;}
+    }
+   }else if(p.state==='out'){p.x+=p.vx*dt;p.y+=p.vy*dt;}
+   else if(p.state==='bounce'){p.x+=p.vx*dt;p.y+=p.vy*dt;}
+  }
+  packet(p);
+  if(p.x>W+20||p.x<-20||p.age>5)packets.splice(i,1);
+ }
+ // small counters below canvas scene
+ label('Packets are illustrative — speed is visual, rates are controlled by the sliders.',W/2,H-12,'#7f93b4',9,'center');
+ if(!paused)requestAnimationFrame(draw);
+}
+function resume(){if(!paused){last=performance.now();requestAnimationFrame(draw)}}
+$('pause').addEventListener('click',()=>{paused=!paused;$('pause').textContent=paused?'▶ Resume':'Ⅱ Pause';$('liveLabel').textContent=paused?'PAUSED':'LIVE SIMULATION';if(!paused)resume()});
+$('surge').addEventListener('click',()=>{attack.value=180;legit.value=45;metrics()});
+$('reset').addEventListener('click',()=>{attack.value=35;legit.value=25;capacity.value=80;packets=[];spawnA=spawnL=0;paused=false;$('pause').textContent='Ⅱ Pause';$('liveLabel').textContent='LIVE SIMULATION';metrics();resume()});
+metrics();requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
